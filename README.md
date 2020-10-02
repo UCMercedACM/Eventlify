@@ -1,0 +1,2 @@
+# Eventlify
+Discord Events Bot
