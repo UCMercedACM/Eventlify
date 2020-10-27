@@ -4,8 +4,8 @@ Discord Events Bot
 
 ## Setup
 
-Generate PipFile -> `pipenv install`
+Install packages -> `pipenv sync`
 
 Access shell -> `pipenv shell`
 
-Install Dependencies -> `pipenv install discord.py python-dotenv`
+Start Bot -> `python bot.py`
