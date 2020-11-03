@@ -3,7 +3,12 @@ import os
 import discord
 from dotenv import load_dotenv
 import random
-from discord.ext import commands
+from discord.ext import commands, tasks
+import csv
+from time import sleep
+from datetime import datetime
+
+from bot_storage import EventlyEvent, list_events, read_all_events
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -53,10 +58,43 @@ async def on_message(message):
     if message.content == '99!':
         response = random.choice(brooklyn_99_quotes)
         await message.channel.send(response)
+    elif message.content == 'print events':
+        print('sending all events')
+        list_events(message)        
     elif 'happy birthday' in message.content.lower():
         await message.channel.send('Happy Birthday! 🎈🎉')
     elif message.content == 'raise-exception':
         raise discord.DiscordException
+
+
+class EventChecker(commands.Cog):
+    def __init__(self):
+        self.printer.start()
+
+    def cog_unload(self):
+        self.printer.cancel()
+
+    @tasks.loop(seconds=15.0)
+    async def printer(self):
+        # read all events and store in list events
+        return
+        events = list()
+        with open('ACMBOT.csv', 'r') as f:
+            csv_reader = csv.reader(f)
+            for row in csv_reader:
+                events.append(EventlyEvent(*row[:4]))
+        # check event dates
+        for event in events:
+            if event.date < datetime.now():
+                # TODO send notification
+                print("Removed event " + event.name)
+                events.remove(event)
+        # write events back to the file
+        with open('ACMBOT.csv', 'w') as f:
+            w = csv.writer(f)
+            for e in events:
+                w.writerows([e.name, e.date.isoformat(), e.description, e.link])
+
 
 # Error handling
 @client.event
@@ -87,6 +125,22 @@ async def nine_nine(ctx):
     response = random.choice(brooklyn_99_quotes)
     await ctx.send(response)
 
+@bot.command(name='list', help='List all the events')
+async def list_events_cmd(ctx):
+    print('listing events')
+    # await ctx.send('testing...')
+    # await list_events(ctx)
+    # events = read_all_events()
+    events = list()
+    with open('./ACMBOT.csv', 'r') as f:
+        r = csv.reader(f)
+        next(r)
+        for row in r:
+            events.append(EventlyEvent(row[0], row[1], row[2], row[3]))
+    msg = '\n'.join([f'{e.name}, {str(e.date)}, {e.description}, {e.link}' for e in events])
+    msg = 'Events:\n' + msg
+    await ctx.send(msg)
+
 # Convert Parameters Automatically
 @bot.command(name='roll_dice', help='Simulates rolling dice.')
 async def roll(ctx, number_of_dice: int, number_of_sides: int):
@@ -106,11 +160,15 @@ async def create_channel(ctx, channel_name='real-python'):
         print(f'Creating a new channel: {channel_name}')
         await guild.create_text_channel(channel_name)
 
+
 # Bot Errors
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.errors.CheckFailure):
         await ctx.send('You do not have the correct role for this command.')
 
-bot.run(TOKEN)
-client.run(TOKEN)
+
+if __name__ == '__main__':
+    bot.add_cog(EventChecker())
+    bot.run(TOKEN)
+    client.run(TOKEN)
