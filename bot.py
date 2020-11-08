@@ -1,14 +1,16 @@
 import os
 
 import discord
+from discord.ext.commands import errors
 from dotenv import load_dotenv
 import random
 from discord.ext import commands, tasks
 import csv
 from time import sleep
 from datetime import datetime
+import traceback
 
-from bot_storage import EventlyEvent, list_events, read_all_events
+from bot_storage import EventlifyEvent, event_table, list_events, read_all_events
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -60,7 +62,7 @@ async def on_message(message):
         await message.channel.send(response)
     elif message.content == 'print events':
         print('sending all events')
-        list_events(message)        
+        list_events(message)
     elif 'happy birthday' in message.content.lower():
         await message.channel.send('Happy Birthday! 🎈🎉')
     elif message.content == 'raise-exception':
@@ -103,7 +105,7 @@ async def on_error(event, *args, **kwargs):
         if event == 'on_message':
             f.write(f'Unhandled message: {args[0]}\n')
         else:
-            raise
+            raise Exception
 
 # On load of the Bot
 @bot.event
@@ -126,20 +128,30 @@ async def nine_nine(ctx):
     await ctx.send(response)
 
 @bot.command(name='list', help='List all the events')
-async def list_events_cmd(ctx):
+async def list_events_cmd(ctx, arg):
     print('listing events')
-    # await ctx.send('testing...')
-    # await list_events(ctx)
-    # events = read_all_events()
     events = list()
     with open('./ACMBOT.csv', 'r') as f:
         r = csv.reader(f)
-        next(r)
+        next(r) # skip header
         for row in r:
-            events.append(EventlyEvent(row[0], row[1], row[2], row[3]))
-    msg = '\n'.join([f'{e.name}, {str(e.date)}, {e.description}, {e.link}' for e in events])
-    msg = 'Events:\n' + msg
-    await ctx.send(msg)
+            events.append(EventlifyEvent(row[0], row[1], row[2], row[3]))
+    embedded = discord.Embed(
+        title='Events',
+        description='',
+        color=0x00ff00,
+        type='rich'
+    )
+    for i, e in enumerate(events):
+        embedded.add_field(name="Event", value = f'[{e.name}]({e.link})', inline=True)
+        embedded.add_field(name="Date", value = e.dateprintable, inline=True)
+        embedded.add_field(name="Description", value = e.description, inline=True)
+        if i < (len(events)-1):
+            embedded.add_field(name="\u200B", value = "\u200B", inline=False)
+    if arg == '--ascii':
+        await ctx.send(f'```\n{event_table(events)}\n```')
+    else:
+        await ctx.send(embed=embedded)
 
 # Convert Parameters Automatically
 @bot.command(name='roll_dice', help='Simulates rolling dice.')
@@ -166,6 +178,14 @@ async def create_channel(ctx, channel_name='real-python'):
 async def on_command_error(ctx, error):
     if isinstance(error, commands.errors.CheckFailure):
         await ctx.send('You do not have the correct role for this command.')
+    else:
+        tb = traceback.extract_tb(error.original.__traceback__)
+        if len(tb) == 0:
+            print('Error:', error, error.original)
+        else:
+            trace = traceback.format_tb(error.original.__traceback__)
+            print('\n'.join(trace))
+            print(error.original)
 
 
 if __name__ == '__main__':
