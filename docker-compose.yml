@@ -1,0 +1,47 @@
+version: "3.8"
+
+networks:
+  eventlify:
+
+volumes:
+    postgres: # named volumes can be managed easier using docker-compose
+
+services:
+    # Database
+    postgres:
+        container_name: postgres
+        image: postgres:12.2-alpine # use official postgres version 12.2
+        restart: unless-stopped
+        volumes:
+            - postgres:/var/lib/postgresql/data/ # persist data even if container shuts down
+        environment:
+            POSTGRES_USER: docker
+            POSTGRES_PASSWORD: docker
+            POSTGRES_DB: events
+            POSTGRES_HOST: localhost
+            POSTGRES_PORT: 5432
+            PGDATA: /var/lib/postgresql/data/
+        ports:
+            - target: 5432 # the port inside the container
+              published: 35432 # the publicly exposed port
+              protocol: tcp # the port protocol (tcp or udp)
+              mode: bridge # bridge networks are used to connect multiple containers together
+        networks:
+          - eventlify
+
+    # Database Administration Tool
+    pgadmin:
+        container_name: pgadmin
+        image: dpage/pgadmin4
+        depends_on:
+            - postgres
+        environment:
+            PGADMIN_DEFAULT_EMAIL: "eventlify"
+            PGADMIN_DEFAULT_PASSWORD: "PgAdmin2020!"
+        ports:
+            - target: 80 # the port inside the container
+              published: 8080 # the publicly exposed port
+              protocol: tcp # the port protocol (tcp or udp)
+              mode: bridge # bridge networks are used to connect multiple containers together
+        networks:
+          - eventlify
