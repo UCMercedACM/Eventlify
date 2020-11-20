@@ -1,14 +1,13 @@
 import os
-
-import discord
-from discord.ext.commands import errors
-from dotenv import load_dotenv
 import random
-from discord.ext import commands, tasks
 import csv
 from time import sleep
 from datetime import datetime
 import traceback
+
+import discord
+from dotenv import load_dotenv
+from discord.ext import commands, tasks
 
 from bot_storage import EventlifyEvent, event_table, list_events, read_all_events
 
@@ -80,11 +79,7 @@ class EventChecker(commands.Cog):
     async def printer(self):
         # read all events and store in list events
         return
-        events = list()
-        with open('ACMBOT.csv', 'r') as f:
-            csv_reader = csv.reader(f)
-            for row in csv_reader:
-                events.append(EventlyEvent(*row[:4]))
+        events = read_all_events('ACMBOT.csv')
         # check event dates
         for event in events:
             if event.date < datetime.now():
@@ -130,12 +125,10 @@ async def nine_nine(ctx):
 @bot.command(name='list', help='List all the events')
 async def list_events_cmd(ctx, arg):
     print('listing events')
-    events = list()
-    with open('./ACMBOT.csv', 'r') as f:
-        r = csv.reader(f)
-        next(r) # skip header
-        for row in r:
-            events.append(EventlifyEvent(row[0], row[1], row[2], row[3]))
+    events = read_all_events('./ACMBOT.csv')
+    if arg == '--ascii':
+        return await ctx.send(f'```\n{event_table(events)}\n```')
+
     embedded = discord.Embed(
         title='Events',
         description='',
@@ -148,10 +141,7 @@ async def list_events_cmd(ctx, arg):
         embedded.add_field(name="Description", value = e.description, inline=True)
         if i < (len(events)-1):
             embedded.add_field(name="\u200B", value = "\u200B", inline=False)
-    if arg == '--ascii':
-        await ctx.send(f'```\n{event_table(events)}\n```')
-    else:
-        await ctx.send(embed=embedded)
+    await ctx.send(embed=embedded)
 
 # Convert Parameters Automatically
 @bot.command(name='roll_dice', help='Simulates rolling dice.')

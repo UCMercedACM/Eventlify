@@ -36,12 +36,9 @@ def read_all_events(filename) -> list:
 
 async def list_events(ctx):
     with open('ACMBOT.csv', 'r') as f:
-        print(f.read())
-    with open('ACMBOT.csv', 'r') as f:
         csv_reader = csv.reader(f)
         s = ''
         for row in csv_reader:
-            print(row)
             s += "EVENT NAME: " + row[0] + \
                 "\nEVENT DATE & TIME: " + row[1] + \
                 "\nEVENT DESCRIPTION: " + row[2] + \
@@ -49,39 +46,81 @@ async def list_events(ctx):
 
         await ctx.send(s)
 
+import textwrap
+
 
 def event_table(events: List[EventlifyEvent]) -> str:
+    return table(
+        [(e.name, e.description, str(e.date)) for e in events],
+        ('name', 'description', 'date'),
+    )
+
+# TODO handle text wrapping
+def table(tabledata: list, header: list, max_cell_width=21) -> str:
+    chars = '─│┴┬┌┐└┘┼├┤'
     buf = io.StringIO()
-    namelen = max(len(e.name) for e in events)
-    buf.write('┌')
-    buf.write('─' * (namelen+2))
-    buf.write('┬')
-    desclen = max(len(e.description) for e in events)
-    buf.write('─' * (desclen+2))
-    buf.write('┬')
-    # TODO Get max length of dates
-    datelen = max(len(str(e.date)) for e in events)
-    buf.write('─' * (datelen+2))
-    buf.write('┐\n')
+    items = [header] + tabledata
+    widths = [len(a) for a in items[0]]
+    for row in items:
+        for i, col in enumerate(row):
+            widths[i] = min(max(widths[i], len(col)), max_cell_width)
 
-    buf.write('| ')
-    buf.write('name'.ljust(namelen))
-    buf.write(' | ')
-    buf.write('description'.ljust(desclen))
-    buf.write(' | ')
-    buf.write('date'.ljust(datelen))
-    buf.write(' |\n')
+    total, n, nblanks = len(items), 0, 0
+    buf.write('┌' + '┬'.join(('─' * (w + 2)) for w in widths) + '┐\n')
+    while items:
+        row = items.pop(0)
+        for i, col in enumerate(row):
+            buf.write('| ')
+            if len(col) > widths[i] + 1:
+                lines = textwrap.wrap(col, widths[i])
+                buf.write(lines.pop(0).ljust(widths[i] + 1))
+                while lines:
+                    if not items:
+                        nblanks += 1
+                        n -= 1
+                        newrow = [''.ljust(w) for w in widths]
+                        newrow[i] = lines.pop(0)
+                        items.insert(0, newrow)
+                        continue
+                    for j in range(i):
+                        # if they are all zeros then replace it
+                        if all(x == ' ' for x in items[0][j]):
+                            items[0][i] = lines.pop(0)
+                            break # dont go to the next else
+                    else:
+                        nblanks += 1
+                        n -= 1
+                        newrow = [''.ljust(w) for w in widths]
+                        newrow[i] = lines.pop(0)
+                        items.insert(0, newrow)
+            else:
+                buf.write(col.ljust(widths[i] + 1))
 
-    for e in events:
-        buf.write('| ' + e.name.ljust(namelen) + ' | ')
-        buf.write(e.description.ljust(desclen) + ' | ')
-        buf.write(str(e.date).ljust(datelen) + ' |\n')
-    buf.write('└')
-    buf.write('─' * (namelen+2))
-    buf.write('┴')
-    buf.write('─' * (desclen+2))
-    buf.write('┴')
-    buf.write('─' * (datelen+2))
-    buf.write('┘\n')
+        buf.write('|\n')
+        if nblanks == 0 and n < total - 1:
+            buf.write('├' + '┼'.join(('─' * (w + 2)) for w in widths) + '┤\n')
+        else:
+            nblanks -= 1
+        n += 1
+    buf.write('└' + '┴'.join(('─' * (w + 2)) for w in widths) + '┘\n')
     return buf.getvalue()
 
+
+def _table(tabledata: list, header: list, max_cell_width=20) -> str:
+    chars = '─│┴┬┌┐└┘┼├┤'
+    buf = io.StringIO()
+    items = [header] + tabledata
+
+    widths = [len(a) for a in items[0]]
+    for row in items:
+        for i, col in enumerate(row):
+            widths[i] = max(widths[i], len(col))
+
+    buf.write('┌' + '┬'.join(('─' * (w + 2)) for w in widths) + '┐\n')
+    for row in items:
+        for i, col in enumerate(row):
+            buf.write('| ')
+            buf.write(col.ljust(widths[i] + 1))
+        buf.write('|\n')
+    buf.write('└' + '┴'.join(('─' * (w + 2)) for w in widths) + '┘\n')
+    return buf.getvalue()
