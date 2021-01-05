@@ -1,10 +1,11 @@
 import os
 import random
 import csv
-from time import sleep
 from datetime import datetime
 import traceback
 
+import aiohttp
+from aiohttp import web
 import discord
 from dotenv import load_dotenv
 from discord.ext import commands, tasks
@@ -18,6 +19,8 @@ GUILD = os.getenv('DISCORD_GUILD')
 client = discord.Client()
 
 bot = commands.Bot(command_prefix='e!')
+
+session = None
 
 # Detecting when someone joins the server
 # Utility Functions running on boot up
@@ -105,7 +108,13 @@ async def on_error(event, *args, **kwargs):
 # On load of the Bot
 @bot.event
 async def on_ready():
+    global session
+    session = aiohttp.ClientSession()
     print(f'{bot.user.name} has connected to Discord!')
+
+    resp = await session.get("http://localhost:5000/api/test")
+    j = await resp.json()
+    print(j)
 
 # Bot prefix + command
 @bot.command(name='99', help='Responds with a random quote from Brooklyn 99')
@@ -122,10 +131,18 @@ async def nine_nine(ctx):
     response = random.choice(brooklyn_99_quotes)
     await ctx.send(response)
 
+
 @bot.command(name='list', help='List all the events')
-async def list_events_cmd(ctx, arg):
+async def list_events_cmd(ctx, arg=None):
     print('listing events')
-    events = read_all_events('./ACMBOT.csv')
+
+    resp = await session.get("http://localhost:5000/api/events")
+    eventresp = await resp.json()
+    events = [
+        EventlifyEvent(e['name'], e['date'], e['description'], e['link'])
+        for e in eventresp['events']
+    ]
+
     if arg == '--ascii':
         return await ctx.send(f'```\n{event_table(events)}\n```')
 
@@ -143,6 +160,32 @@ async def list_events_cmd(ctx, arg):
             embedded.add_field(name="\u200B", value = "\u200B", inline=False)
     await ctx.send(embed=embedded)
 
+# Add event
+@bot.command(name='add', help='Add an event. Format: #Year-#Month-#Day Hour:Minute AM/PM')
+async def add_event_cmd(ctx, arg1, arg2, arg3, arg4, arg5):
+    name = arg1
+    date = datetime.datetime.strptime(arg2, '%Y-%m-%d %I:%M%p')
+    description = arg3
+    link = arg4
+    row = [name, date, description, link]
+    with open('ACMBOT.csv', 'a') as f:
+            w = csv.writer(f)
+            w.writerows(row)
+
+# Remove event
+@bot.command(name='remove', help='Remove an event, must use exact name')
+async def remove_event_cmd(ctx, args):
+    name = args
+    with open('ACMBOT.csv', 'rb') as read, open('ACMBOT_edit.csv', 'wb') as write:
+        r = csv.reader(read)
+        w = csv.writer(write)
+        for e in r:
+            if e.name != args:
+                w.writerow(e)
+
+
+
+
 # Convert Parameters Automatically
 @bot.command(name='roll_dice', help='Simulates rolling dice.')
 async def roll(ctx, number_of_dice: int, number_of_sides: int):
@@ -151,6 +194,7 @@ async def roll(ctx, number_of_dice: int, number_of_sides: int):
         for _ in range(number_of_dice)
     ]
     await ctx.send(', '.join(dice))
+
 
 # Create Channel Command
 @bot.command(name='create-channel')
@@ -181,4 +225,3 @@ async def on_command_error(ctx, error):
 if __name__ == '__main__':
     bot.add_cog(EventChecker())
     bot.run(TOKEN)
-    client.run(TOKEN)
