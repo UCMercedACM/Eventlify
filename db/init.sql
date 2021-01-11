@@ -5,3 +5,7 @@ CREATE TABLE event (
     description TEXT,
     link TEXT
 );
+
+CREATE TABLE discord_server (
+    name TEXT
+);

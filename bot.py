@@ -19,8 +19,7 @@ GUILD = os.getenv('DISCORD_GUILD')
 client = discord.Client()
 
 bot = commands.Bot(command_prefix='e!')
-
-session = None
+session = None # initialized on bot ready
 
 # Detecting when someone joins the server
 # Utility Functions running on boot up
@@ -112,9 +111,6 @@ async def on_ready():
     session = aiohttp.ClientSession()
     print(f'{bot.user.name} has connected to Discord!')
 
-    resp = await session.get("http://localhost:5000/api/test")
-    j = await resp.json()
-    print(j)
 
 # Bot prefix + command
 @bot.command(name='99', help='Responds with a random quote from Brooklyn 99')
@@ -131,7 +127,7 @@ async def nine_nine(ctx):
     response = random.choice(brooklyn_99_quotes)
     await ctx.send(response)
 
-
+#List events
 @bot.command(name='list', help='List all the events')
 async def list_events_cmd(ctx, arg=None):
     print('listing events')
@@ -161,7 +157,7 @@ async def list_events_cmd(ctx, arg=None):
     await ctx.send(embed=embedded)
 
 # Add event
-@bot.command(name='add', help='Add an event. Format: #Year-#Month-#Day Hour:Minute AM/PM')
+@bot.command(name='add', help='Add an event. Format: Year-Month-Day Hour:Minute AM/PM')
 async def add_event_cmd(ctx, arg1, arg2, arg3, arg4, arg5):
     name = arg1
     date = datetime.datetime.strptime(arg2, '%Y-%m-%d %I:%M%p')
@@ -182,8 +178,6 @@ async def remove_event_cmd(ctx, args):
         for e in r:
             if e.name != args:
                 w.writerow(e)
-
-
 
 
 # Convert Parameters Automatically
