@@ -13,7 +13,7 @@ services:
         image: postgres:12.2-alpine # use official postgres version 12.2
         restart: unless-stopped
         volumes:
-            - ./db/postgres-data:/var/lib/postgresql/data/ # persist data even if container shuts down
+            #- ./db/postgres-data:/var/lib/postgresql/data/ # persist data even if container shuts down
             - ./db:/docker-entrypoint-initdb.d:ro # setup scripts
         environment:
             POSTGRES_USER: docker

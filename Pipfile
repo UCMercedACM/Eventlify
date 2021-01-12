@@ -10,6 +10,7 @@ discord-py = "==1.5.1"
 python-dotenv = "==0.14.0"
 flask = "==1.1.2"
 psycopg2-binary = "*"
+pytest = "*"
 
 [requires]
 python_version = "3.8"

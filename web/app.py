@@ -4,16 +4,13 @@ import psycopg2
 db = psycopg2.connect('dbname=events host=localhost port=35432 user=docker password=docker')
 app = Flask(__name__)
 
-@app.route('/')
-def home():
-    return send_from_directory("static", 'index.html')
 
 @app.route('/api/test', methods=['GET', 'POST'])
 def test_route():
     return {
         'test': 'hello from the http server',
-        'a_boolean': True,
         'app': str(app),
+        'config': str(app.config)
     }
 
 
@@ -40,6 +37,9 @@ def list_events():
 
 @app.route("/api/event", methods=("POST",))
 def create_event():
+    if request.json is None:
+        return {"error": "bad request"}, 400
+
     data = (
         request.json['name'],
         request.json['date'],
@@ -55,6 +55,7 @@ def create_event():
             """, data)
         new = cur.fetchone()
     db.commit()
+
     return {
         "id": new[0],
         "name": new[1],
@@ -84,10 +85,11 @@ def get_event(id):
 def delete_event(id):
     sql_query = 'DELETE FROM event WHERE id = %s'
     cur = db.cursor()
-    cur.execute(sql_query, (id))
+    cur.execute(sql_query, (id,))
     cur.close()
     db.commit()
     return {"status": "deleted object"}, 200
+
 
 @app.route("/api/event/<id>", methods=("PUT",))
 def update_event(id):
