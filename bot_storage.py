@@ -9,7 +9,8 @@ class EventlifyEvent:
     def __init__(self, name: str, date: str, description: str, link: str):
         self.name = name
         # this parses the same time format returned my str(date)
-        self.date = datetime.fromisoformat(date)
+        # self.date = datetime.fromisoformat(date)
+        self.date = date
         #self.dateprintable = self.date.strftime('%Y-%m-%d %H:%M')
         self.dateprintable = str(self.date)
         self.description = description

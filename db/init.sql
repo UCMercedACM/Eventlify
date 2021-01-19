@@ -1,7 +1,7 @@
 CREATE TABLE event (
     id SERIAL,
     name TEXT,
-    date DATE,
+    date TIMESTAMPTZ,
     description TEXT,
     link TEXT
 );

@@ -20,7 +20,8 @@ def list_events():
     cur.execute("""
         SELECT
             id, name, date, description, link
-        FROM event"""
+        FROM event
+        LIMIT %s OFFSET %s""", (request.args.get("limit"), request.args.get("offset"))
     )
     events = []
     for row in cur.fetchall():
@@ -40,6 +41,10 @@ def create_event():
     if request.json is None:
         return {"error": "bad request"}, 400
 
+    if not request.json['name']:
+        return {"error": "no name"}, 400
+    elif not request.json['date']:
+        return {"error": "no date"}, 400
     data = (
         request.json['name'],
         request.json['date'],
@@ -122,3 +127,8 @@ def update_event(id):
         "description": new[2],
         "link": new[3],
     }, 200
+
+
+@app.route('/api/search')
+def search_event():
+    pass

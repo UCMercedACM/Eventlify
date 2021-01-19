@@ -9,6 +9,8 @@ from aiohttp import web
 import discord
 from dotenv import load_dotenv
 from discord.ext import commands, tasks
+from discord.ext.commands.context import Context
+import DiscordUtils
 
 from bot_storage import EventlifyEvent, event_table, list_events, read_all_events
 
@@ -20,6 +22,7 @@ client = discord.Client()
 
 bot = commands.Bot(command_prefix='e!')
 session = None # initialized on bot ready
+API_HOST = 'http://localhost:5000'
 
 # Detecting when someone joins the server
 # Utility Functions running on boot up
@@ -77,22 +80,10 @@ class EventChecker(commands.Cog):
     def cog_unload(self):
         self.printer.cancel()
 
-    @tasks.loop(seconds=15.0)
+    @tasks.loop(seconds=30.0)
     async def printer(self):
         # read all events and store in list events
         return
-        events = read_all_events('ACMBOT.csv')
-        # check event dates
-        for event in events:
-            if event.date < datetime.now():
-                # TODO send notification
-                print("Removed event " + event.name)
-                events.remove(event)
-        # write events back to the file
-        with open('ACMBOT.csv', 'w') as f:
-            w = csv.writer(f)
-            for e in events:
-                w.writerows([e.name, e.date.isoformat(), e.description, e.link])
 
 
 # Error handling
@@ -111,26 +102,15 @@ async def on_ready():
     session = aiohttp.ClientSession()
     print(f'{bot.user.name} has connected to Discord!')
 
-
-# Bot prefix + command
-@bot.command(name='99', help='Responds with a random quote from Brooklyn 99')
-async def nine_nine(ctx):
-    brooklyn_99_quotes = [
-        'I\'m the human form of the 💯 emoji.',
-        'Bingpot!',
-        (
-            'Cool. Cool cool cool cool cool cool cool, '
-            'no doubt no doubt no doubt no doubt.'
-        ),
-    ]
-
-    response = random.choice(brooklyn_99_quotes)
-    await ctx.send(response)
-
 #List events
 @bot.command(name='list', help='List all the events')
-async def list_events_cmd(ctx, arg=None):
-    print('listing events')
+async def list_events_cmd(ctx: Context, arg=None):
+    print(f'listing events to "{ctx.guild}"')
+    # print(dir(ctx.history()))
+    print(ctx)
+    print(dir(ctx))
+    print(ctx.channel)
+    print(ctx.me, ctx.guild)
 
     resp = await session.get("http://localhost:5000/api/events")
     eventresp = await resp.json()
@@ -154,30 +134,56 @@ async def list_events_cmd(ctx, arg=None):
         embedded.add_field(name="Description", value = e.description, inline=True)
         if i < (len(events)-1):
             embedded.add_field(name="\u200B", value = "\u200B", inline=False)
-    await ctx.send(embed=embedded)
+    msg = await ctx.send(embed=embedded)
+    await msg.add_reaction('\U00002B05')
+    await msg.add_reaction('\U000027A1')
+
 
 # Add event
 @bot.command(name='add', help='Add an event. Format: Year-Month-Day Hour:Minute AM/PM')
-async def add_event_cmd(ctx, arg1, arg2, arg3, arg4, arg5):
-    name = arg1
-    date = datetime.datetime.strptime(arg2, '%Y-%m-%d %I:%M%p')
-    description = arg3
-    link = arg4
-    row = [name, date, description, link]
-    with open('ACMBOT.csv', 'a') as f:
-            w = csv.writer(f)
-            w.writerows(row)
+async def add_event_cmd(ctx, name, arg2, description, link):
+    print('adding event')
+    #date = datetime.strptime(arg2, '%Y-%m-%d')
+    date = datetime.strptime(arg2, '%Y-%m-%d %I:%M %p')
+
+    resp = await session.post(
+        "http://localhost:5000/api/event",
+        headers={'Content-Type': "application/json"},
+        json={
+            'name': name,
+            'date': str(date),
+            'description': description,
+            'link': link,
+        },
+    )
+    if resp.status == 201:
+        msg = discord.Embed(
+            title='Events',
+            description='',
+            color=0x00ff00,
+            type='rich'
+        )
+        msg.add_field(name="Success", value='Event added successfully')
+        await ctx.send(embed=msg)
+    elif resp.status >= 300:
+        print('error:', await resp.json())
+        await ctx.send("Something has gone terribly wrong :(")
+
 
 # Remove event
 @bot.command(name='remove', help='Remove an event, must use exact name')
-async def remove_event_cmd(ctx, args):
-    name = args
-    with open('ACMBOT.csv', 'rb') as read, open('ACMBOT_edit.csv', 'wb') as write:
-        r = csv.reader(read)
-        w = csv.writer(write)
-        for e in r:
-            if e.name != args:
-                w.writerow(e)
+async def remove_event_cmd(ctx, name):
+    # name = args
+    # with open('ACMBOT.csv', 'rb') as read, open('ACMBOT_edit.csv', 'wb') as write:
+    #     r = csv.reader(read)
+    #     w = csv.writer(write)
+    #     for e in r:
+    #         if e.name != args:
+    #             w.writerow(e)
+
+    # TODO do this
+    ctx.send("not implemented")
+    resp = await session.delete(API_HOST + f'/api/event/',)
 
 
 # Convert Parameters Automatically
@@ -188,6 +194,16 @@ async def roll(ctx, number_of_dice: int, number_of_sides: int):
         for _ in range(number_of_dice)
     ]
     await ctx.send(', '.join(dice))
+
+
+from discord import Emoji, Reaction, Message
+
+
+@bot.command(name="test")
+async def test(ctx: Context):
+    msg: Message = await ctx.send("this is a test")
+    await msg.add_reaction('\U0001F440')
+    print(ctx.message.reactions)
 
 
 # Create Channel Command
