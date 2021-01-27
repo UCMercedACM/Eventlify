@@ -3,9 +3,6 @@ CREATE TABLE event (
     name TEXT,
     date TIMESTAMPTZ,
     description TEXT,
-    link TEXT
-);
-
-CREATE TABLE discord_server (
-    name TEXT
+    link TEXT,
+    guild_id BIGINT
 );

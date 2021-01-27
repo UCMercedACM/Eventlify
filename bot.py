@@ -14,64 +14,16 @@ import DiscordUtils
 
 from bot_storage import EventlifyEvent, event_table, list_events, read_all_events
 
+
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD = os.getenv('DISCORD_GUILD')
 
-client = discord.Client()
+# client = discord.Client()
 
 bot = commands.Bot(command_prefix='e!')
 session = None # initialized on bot ready
 API_HOST = 'http://localhost:5000'
-
-# Detecting when someone joins the server
-# Utility Functions running on boot up
-@client.event
-async def on_ready():
-    guild = discord.utils.get(client.guilds, name=GUILD)
-
-    print(
-        f'{client.user} is connected to the following guild:\n'
-        f'{guild.name}(id: {guild.id})\n'
-    )
-
-    members = '\n - '.join([member.name for member in guild.members])
-    print(f'Guild Members:\n - {members}')
-
-# Welcoming new members
-@client.event
-async def on_member_join(member):
-    await member.create_dm()
-    await member.dm_channel.send(
-        f'Hi {member.name}, welcome to ACM UCM server!'
-    )
-
-# Responding to Messages
-@client.event
-async def on_message(message):
-    if message.author == client.user:
-        return
-
-    brooklyn_99_quotes = [
-        'I\'m the human form of the 💯 emoji.',
-        'Bingpot!',
-        (
-            'Cool. Cool cool cool cool cool cool cool, '
-            'no doubt no doubt no doubt no doubt.'
-        ),
-    ]
-
-    if message.content == '99!':
-        response = random.choice(brooklyn_99_quotes)
-        await message.channel.send(response)
-    elif message.content == 'print events':
-        print('sending all events')
-        list_events(message)
-    elif 'happy birthday' in message.content.lower():
-        await message.channel.send('Happy Birthday! 🎈🎉')
-    elif message.content == 'raise-exception':
-        raise discord.DiscordException
-
 
 class EventChecker(commands.Cog):
     def __init__(self):
@@ -86,15 +38,6 @@ class EventChecker(commands.Cog):
         return
 
 
-# Error handling
-@client.event
-async def on_error(event, *args, **kwargs):
-    with open('err.log', 'a') as f:
-        if event == 'on_message':
-            f.write(f'Unhandled message: {args[0]}\n')
-        else:
-            raise Exception
-
 # On load of the Bot
 @bot.event
 async def on_ready():
@@ -106,13 +49,11 @@ async def on_ready():
 @bot.command(name='list', help='List all the events')
 async def list_events_cmd(ctx: Context, arg=None):
     print(f'listing events to "{ctx.guild}"')
-    # print(dir(ctx.history()))
-    print(ctx)
-    print(dir(ctx))
-    print(ctx.channel)
-    print(ctx.me, ctx.guild)
 
-    resp = await session.get("http://localhost:5000/api/events")
+    resp = await session.get(f"{API_HOST}/api/events/{ctx.message.guild.id}")
+    if resp.status != 200:
+        await ctx.send("something is broken, silly developers")
+        return
     eventresp = await resp.json()
     events = [
         EventlifyEvent(e['name'], e['date'], e['description'], e['link'])
@@ -122,38 +63,49 @@ async def list_events_cmd(ctx: Context, arg=None):
     if arg == '--ascii':
         return await ctx.send(f'```\n{event_table(events)}\n```')
 
-    embedded = discord.Embed(
-        title='Events',
-        description='',
-        color=0x00ff00,
-        type='rich'
-    )
+    embeds = []
+    embedded = None
+    page_size = 5
+
     for i, e in enumerate(events):
+        if i % page_size == 0:
+            embedded = discord.Embed(
+                title='Events',
+                description='',
+                color=0x00ff00,
+                type='rich'
+            )
         embedded.add_field(name="Event", value = f'[{e.name}]({e.link})', inline=True)
         embedded.add_field(name="Date", value = e.dateprintable, inline=True)
         embedded.add_field(name="Description", value = e.description, inline=True)
         if i < (len(events)-1):
             embedded.add_field(name="\u200B", value = "\u200B", inline=False)
-    msg = await ctx.send(embed=embedded)
-    await msg.add_reaction('\U00002B05')
-    await msg.add_reaction('\U000027A1')
+
+        if i % page_size == 0:
+            embeds.append(embedded)
+
+    #msg = await ctx.send(embed=embedded)
+    paginator = DiscordUtils.Pagination.AutoEmbedPaginator(ctx, timeout=120, auto_footer=True, remove_reactions=True)
+    await paginator.run(embeds)
+    #await msg.add_reaction('\U00002B05')
+    #await msg.add_reaction('\U000027A1')
 
 
 # Add event
 @bot.command(name='add', help='Add an event. Format: Year-Month-Day Hour:Minute AM/PM')
-async def add_event_cmd(ctx, name, arg2, description, link):
+async def add_event_cmd(ctx, name, date, description, link):
     print('adding event')
     #date = datetime.strptime(arg2, '%Y-%m-%d')
-    date = datetime.strptime(arg2, '%Y-%m-%d %I:%M %p')
-
+    date = datetime.strptime(date, '%Y-%m-%d %I:%M %p')
     resp = await session.post(
-        "http://localhost:5000/api/event",
+        f"{API_HOST}/api/event",
         headers={'Content-Type': "application/json"},
         json={
             'name': name,
             'date': str(date),
             'description': description,
             'link': link,
+            'guild_id': ctx.message.guild.id,
         },
     )
     if resp.status == 201:
@@ -173,17 +125,10 @@ async def add_event_cmd(ctx, name, arg2, description, link):
 # Remove event
 @bot.command(name='remove', help='Remove an event, must use exact name')
 async def remove_event_cmd(ctx, name):
-    # name = args
-    # with open('ACMBOT.csv', 'rb') as read, open('ACMBOT_edit.csv', 'wb') as write:
-    #     r = csv.reader(read)
-    #     w = csv.writer(write)
-    #     for e in r:
-    #         if e.name != args:
-    #             w.writerow(e)
-
     # TODO do this
-    ctx.send("not implemented")
-    resp = await session.delete(API_HOST + f'/api/event/',)
+    # ctx.send("not implemented")
+    # resp = await session.delete(API_HOST + f'/api/event/',)
+    await ctx.send("You are not allowed to do this >:(")
 
 
 # Convert Parameters Automatically
@@ -195,15 +140,12 @@ async def roll(ctx, number_of_dice: int, number_of_sides: int):
     ]
     await ctx.send(', '.join(dice))
 
-
-from discord import Emoji, Reaction, Message
-
-
 @bot.command(name="test")
 async def test(ctx: Context):
-    msg: Message = await ctx.send("this is a test")
-    await msg.add_reaction('\U0001F440')
-    print(ctx.message.reactions)
+    print(type(ctx.guild))
+    print(dir(ctx.guild))
+    print(ctx.guild.id)
+    await ctx.send(ctx.message.guild.id)
 
 
 # Create Channel Command
@@ -223,6 +165,7 @@ async def on_command_error(ctx, error):
     if isinstance(error, commands.errors.CheckFailure):
         await ctx.send('You do not have the correct role for this command.')
     else:
+        # Prints out the error traceback
         tb = traceback.extract_tb(error.original.__traceback__)
         if len(tb) == 0:
             print('Error:', error, error.original)

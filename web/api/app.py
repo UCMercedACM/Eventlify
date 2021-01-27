@@ -1,8 +1,16 @@
-from flask import Flask, send_from_directory, request
+from flask import Flask, request, send_from_directory
 import psycopg2
 
 db = psycopg2.connect('dbname=events host=localhost port=35432 user=docker password=docker')
 app = Flask(__name__)
+
+
+@app.route('/', methods=("GET",), defaults={'path': None})
+@app.route('/<path>', methods=("GET",))
+def home(path):
+    if not path:
+        path = "./index.html"
+    return send_from_directory(".", "index.html")
 
 
 @app.route('/api/test', methods=['GET', 'POST'])
@@ -14,14 +22,22 @@ def test_route():
     }
 
 
-@app.route('/api/events', methods=("GET",))
-def list_events():
+@app.route('/api/events/<guild_id>', methods=("GET",))
+def list_events(guild_id):
     cur = db.cursor()
     cur.execute("""
         SELECT
-            id, name, date, description, link
+            id,
+            name,
+            date,
+            description,
+            link
         FROM event
-        LIMIT %s OFFSET %s""", (request.args.get("limit"), request.args.get("offset"))
+        WHERE guild_id = %s
+        LIMIT %s OFFSET %s""", (
+            guild_id,
+            request.args.get("limit"),
+            request.args.get("offset"))
     )
     events = []
     for row in cur.fetchall():
@@ -45,18 +61,22 @@ def create_event():
         return {"error": "no name"}, 400
     elif not request.json['date']:
         return {"error": "no date"}, 400
+    elif not request.json['guild_id']:
+        return {"error": "no guild id"}, 400
+
     data = (
         request.json['name'],
         request.json['date'],
         request.json.get('description'),
         request.json.get('link'),
+        request.json['guild_id'],
     )
     cur = db.cursor()
     with db.cursor() as cur:
         cur.execute("""
-            INSERT INTO event (name, date, description, link)
-            VALUES (%s, %s, %s, %s)
-            RETURNING id, name, date, description, link
+            INSERT INTO event (name, date, description, link, guild_id)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id, name, date, description, link, guild_id
             """, data)
         new = cur.fetchone()
     db.commit()
@@ -67,6 +87,7 @@ def create_event():
         "date": new[2],
         "description": new[3],
         "link": new[4],
+        "guild_id": new[5],
     }, 201
 
 
