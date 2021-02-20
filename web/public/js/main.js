@@ -1,11 +1,11 @@
-const main = () => {};
-const guild_id = 773323374550188054;
-console.log("hello there.");
-let btn = document.getElementById("list-events-btn");
-btn.addEventListener("click", (event) => {
-  fetch(`/api/events/${guild_id}`)
-    .then((resp) => resp.json())
-    .then((json) => {
+const main = () => {
+  const guild_id = "773323374550188054";
+
+  let btn = document.getElementById("list-events-btn");
+
+  btn.addEventListener("click", (event) => {
+    console.log(guild_id);
+    getEvents(guild_id).then((json) => {
       let events = json["events"];
       let el = document.getElementById("events");
       for (let i = 0; i < events.length; i++) {
@@ -14,4 +14,9 @@ btn.addEventListener("click", (event) => {
         el.appendChild(e);
       }
     });
-});
+  });
+};
+
+async function getEvents(guild_id) {
+  return await fetch(`/api/events/${guild_id}`).then((resp) => resp.json());
+}

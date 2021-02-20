@@ -1,0 +1,19 @@
+.sidebar {
+    position: fixed;
+    top: 10%;
+    left: 2rem;
+}
+
+.sidebar li {
+    display: block;
+    color: white;
+    padding-top: 1rem;
+}
+
+.sidebar li:hover {
+    color: lightgray;
+}
+
+.sidebar-menu-icon {
+    width: 30px;
+}

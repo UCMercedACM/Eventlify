@@ -1,0 +1,28 @@
+{
+  "name": "eventify",
+  "version": "1.0.0",
+  "description": "Discord Events Bot",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build-css": "npx tailwindcss-cli build ./web/public/css/main.css -o web/public/css/tailwind.css"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/UCMercedACM/Eventlify.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/UCMercedACM/Eventlify/issues"
+  },
+  "homepage": "https://github.com/UCMercedACM/Eventlify#readme",
+  "dependencies": {
+    "autoprefixer": "^10.2.4",
+    "postcss": "^8.2.4",
+    "tailwindcss": "^2.0.2"
+  }
+}

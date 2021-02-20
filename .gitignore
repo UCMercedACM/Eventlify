@@ -133,3 +133,8 @@ dmypy.json
 # Data
 *.csv
 db/postgres-data
+
+# Node
+/node_modules
+
+web/public/css/tailwind.css

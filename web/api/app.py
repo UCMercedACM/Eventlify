@@ -1,17 +1,47 @@
-from flask import Flask, request, send_from_directory
+from flask import Flask, request, send_from_directory, redirect
 import psycopg2
+from dotenv import load_dotenv
+from urllib.parse import urlencode
 
+import os
+
+load_dotenv()
 db = psycopg2.connect('dbname=events host=localhost port=35432 user=docker password=docker')
-app = Flask(__name__)
+app = Flask(
+    __name__,
+    static_folder="web/public",
+    static_url_path="/",
+)
+app.root_path = os.getcwd()
 
 
 @app.route('/', methods=("GET",), defaults={'path': None})
 @app.route('/<path>', methods=("GET",))
 def home(path):
     if not path:
-        path = "./index.html"
-    return send_from_directory(".", "index.html")
+        path = "index.html"
+    return send_from_directory(app.static_folder, path)
 
+@app.route("/bot-login", methods=("GET",))
+def bot_login():
+    params = {
+        'client_id': os.getenv("DISCORD_CLIENT_ID"),
+        'scope': 'identify guilds',
+        'response_type': 'code',
+        'state': "123456789",
+        'redirect_uri': request.host_url + "api/auth/discord",
+        'prompt': 'none',
+    }
+    url = f'https://discord.com/api/oauth2/authorize?{urlencode(params)}'
+    return redirect(url)
+
+@app.route("/api/auth/discord", methods=("GET", "POST"))
+def auth():
+    return "yee"
+
+@app.route("/dashboard", methods=("GET",))
+def dashboard():
+    return '<h1>hello, you made it to the dashboard</h1>'
 
 @app.route('/api/test', methods=['GET', 'POST'])
 def test_route():
@@ -49,6 +79,9 @@ def list_events(guild_id):
             'link': row[4],
         })
     cur.close()
+    print(events)
+    if not events:
+        return {'error': "no events found"}, 404
     return { 'events': events }, 200
 
 
