@@ -6,3 +6,9 @@ CREATE TABLE event (
     link TEXT,
     guild_id BIGINT
 );
+
+CREATE TABLE guild (
+    guild_id BIGINT,
+    code TEXT,
+    permissions INT
+);

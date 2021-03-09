@@ -9,6 +9,24 @@
         body {
             background-color: #253039;
         }
+
+        .modal {
+            position: fixed;
+            display: none;  /* hides the element, then toggled with js */
+            z-index: 100;   /* put it on top of everything */
+            overflow: auto; /* idk lol */
+        }
+
+        /* for the add event popup */
+        .add-event {
+            border-width: 2px;
+            border-color: white;
+            background-color: #253039;
+        }
+        .add-event label, button {
+            color: white;
+        }
+
     </style>
     <title>Eventify Control Panel</title>
 </head>
@@ -20,14 +38,14 @@
                 <a href = "/documentation" class = "text-white">Documentation</a>
             </div>-->
         </div>
-        <div class="relative top-9">
-            <div class= "pl-20">
-                <a href = "documentation" class = "text-2xl align-baseline text-white float-left pl-40">Documentation</a>
-                <a href = "news" class = "text-2xl text-white float-left pl-20">News</a>
-                <a href = "status" class = "text-2xl text-white float-left pl-20">Status</a>
-                <a href = "User's Server" class = "text-2xl text-white float-left pl-20">User's Server</a>
-            </div>
-            <svg
+        <div class="fixed top-9 ml-40">
+            <div class= "flex flex-nowrap">
+                <a href = "documentation" class = "text-2xl text-white float-left ml-40">Documentation</a>
+                <a href = "news" class = "text-2xl text-white float-left ml-24">News</a>
+                <a href = "status" class = "text-2xl text-white float-left ml-24">Status</a>
+                <a href = "User's Server" class = "text-2xl text-white float-left ml-24">User's Server</a>
+                <!--<img src="/img/dropdown.png" class = "w-10 h-10 items-center ml-3">-->
+                <svg
                  version="1.1"
                  xmlns="http://www.w3.org/2000/svg"
                  xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -35,12 +53,92 @@
                  enable-background="new 0 0 129 129"
                  width="30"
                  fill="white"
-                 class="left-4 m-0.5"
+                 class="left-4 ml-3"
                 >
                     <g>
                         <path d="m121.3,34.6c-1.6-1.6-4.2-1.6-5.8,0l-51,51.1-51.1-51.1c-1.6-1.6-4.2-1.6-5.8,0-1.6,1.6-1.6,4.2 0,5.8l53.9,53.9c0.8,0.8 1.8,1.2 2.9,1.2 1,0 2.1-0.4 2.9-1.2l53.9-53.9c1.7-1.6 1.7-4.2 0.1-5.8z"/>
                     </g>
                 </svg>
+
+                <svg id="Layer_1"
+                data-name="Layer 1"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 380.34 380.34"
+                width="40px"
+                height="40px"
+                class="ml-24">
+                <defs>
+                    <style>.cls-1{fill:#666766;}.cls-2{fill:#fff;}.cls-3,.cls-4{fill:none;stroke-miterlimit:10;}.cls-3{stroke:#6c6c6c;}.cls-4{stroke:#fff;}</style></defs><title>icon_user_whiteongrey</title><circle class="cls-1" cx="190.17" cy="190.17" r="190.17"/><polygon class="cls-2" points="101.53 236.8 101.53 336.28 278.81 336.28 278.81 236.8 256.75 229.79 251.13 210.75 192.72 269.59 128.7 210.75 123.51 228.49 101.53 236.8"/><ellipse class="cls-2" cx="189.48" cy="129.46" rx="80.18" ry="97.25"/><path class="cls-3" d="M277.65,119.63" transform="translate(-9.56 -9.38)"/><path class="cls-3" d="M254.56,123" transform="translate(-9.56 -9.38)"/><path class="cls-4" d="M277.65,119.63" transform="translate(-9.56 -9.38)"/>
+                    <path class="cls-4" d="M124.89,101.8" transform="translate(-9.56 -9.38)"/>
+                </svg>
+                <a href = "Username" class = "text-2xl text-white ml-3">Username</a>
+
+            </div>
+        </div>
+        <div class= "relative flex top-1 pt-36 pl-36 items-center justify-left">
+            <button class="text-white rounded-full border border-white py-1 px-3" id="add-event-btn">Add Event</button>
+            <div class="modal add-event flex flex-col" id="add-event-modal">
+                <div>
+                    <label for="event-title">Title</label>
+                    <input id="event-title" type="text" placeholder="Add Title">
+                </div>
+                <div>
+                    <label for="event-date">Date</label>
+                    <input id="event-date" type="date">
+                    <label for="event-time">Time</label>
+                    <input id="event-time" type="time">
+                </div>
+                <div>
+                <input type="text" placeholder="Add description">
+
+                </div>
+                <div>
+                    <button class="text-right" id="close-add-event-modal">Cancel</button>
+                    <button type="submit">Save</button>
+                </div>
+            </div>
+            <div class= "flex items-center pl-72">
+                <div>
+                    <label for="filters" class= "text-white rounded-full border border-white py-1 px-3"> Filters: </label>
+                </div>
+                <div class= "pl-2">
+                    <select name="filters" id="filters">
+                        <option value= "Date">Date</option>
+                        <option value= "Name">Name</option>
+                        <option value= "Upcoming">Upcoming</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class= "relative flex top-1 pt-3 pl-72">
+                <div>
+                    <table class = "text-white border border-solid table-fixed">
+                    <tr>
+                        <th class= "w-60">Event Name</th>
+                        <th class= "w-60">Date</th>
+                        <th class= "w-24">Time</th>
+                    </tr>
+                    <tr>
+                        <td class="border text-center">Test Event</td>
+                        <td class="border text-center">March 15, 2021</td>
+                        <td class="border text-center">07:00 PM</td>
+                    </tr>
+                    <tr>
+                        <td class="border text-center">Take Your Child to Work Day</td>
+                        <td class="border text-center">April 7, 2010</td>
+                        <td class="border text-center">07:00 PM</td>
+                    </tr>
+                    </table>
+                    <div class = "flex items-center pl-80 pt-3">
+                        <label for="Modify" class= "text-white rounded-full border border-white py-1 px-3"> Modify events: </label>
+                        <div class= "pl-2">
+                            <select name="Modify" id="modify">
+                                <option value= "Edit">Edit</option>
+                                <option value= "Delete">Delete</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
         </div>
     </nav>
 
@@ -54,12 +152,33 @@
          stroke-linecap="round"
          stroke-linejoin="round"
          stroke-width="2"
-         class="sidebar-menu-icon"
+         class="sidebar-menu-icon pt-10"
         >
             <path d="M4 8 L28 8 M4 16 L28 16 M4 24 L28 24" />
         </svg>
         <ul>
-            <li><a href="#">Event List</a></li>
+            <li><button onclick="alert('yeeeeeeeeeeeeeeeeeeeet you clicked a button');">Event List</button></li>
             <li><a href="#">Command Settings</a></li>
         </ul>
+        <div class="pt-96">
+            <button onclick="toggleColor()">
+                <?xml version="1.0" encoding="UTF-8"?>
+                <!-- Created with Inkscape (http://www.inkscape.org/) -->
+                <div>
+                    <svg id="toggle" version="1.1" viewBox="0 0 100 35" width="90" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+                        <g transform="translate(0 -262)">
+                            <rect id="rect" y="262" width="100" height="35" ry="17.5" fill="white"/>
+                            <circle id="circ1" cx="17.5" cy="279.46" r="12.5" fill="#253039"/>
+                            <circle id="circ2" cx="82.5" cy="279.33" r="12.5" fill="white"/>
+                       </g>
+                    </svg>
+                </div>
+            </button>
+            <h3 class="text-white pt-1">Dark/Light Mode</h3>
+        </div>
     </nav>
+    <script src="js/main.js"></script>
+    <script>
+        (function() { main(); })();
+    </script>
+</body>

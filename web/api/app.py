@@ -1,47 +1,95 @@
 from flask import Flask, request, send_from_directory, redirect
 import psycopg2
 from dotenv import load_dotenv
-from urllib.parse import urlencode
+import requests
 
+from urllib.parse import urlencode
 import os
 
-load_dotenv()
+# load_dotenv()
 db = psycopg2.connect('dbname=events host=localhost port=35432 user=docker password=docker')
 app = Flask(
     __name__,
     static_folder="web/public",
     static_url_path="/",
+    root_path=os.getcwd(),
 )
-app.root_path = os.getcwd()
 
+@app.route("/", methods=("GET",))
+def home():
+    return send_from_directory(app.static_folder, "index.html")
 
-@app.route('/', methods=("GET",), defaults={'path': None})
-@app.route('/<path>', methods=("GET",))
-def home(path):
-    if not path:
-        path = "index.html"
-    return send_from_directory(app.static_folder, path)
+@app.route("/css/<path>", methods=("GET",))
+def css(path):
+    return send_from_directory(os.path.join(app.static_folder, "css"), path)
+
+@app.route("/js/<path>", methods=("GET",))
+def js(path):
+    return send_from_directory(os.path.join(app.static_folder, "js"), path)
+
+@app.route("/img/<path>", methods=("GET",))
+def img(path):
+    return send_from_directory(os.path.join(app.static_folder, "img"), path)
 
 @app.route("/bot-login", methods=("GET",))
 def bot_login():
     params = {
         'client_id': os.getenv("DISCORD_CLIENT_ID"),
-        'scope': 'identify guilds',
+        'permissions': '51200',
+        'scope': 'identify guilds bot',
         'response_type': 'code',
-        'state': "123456789",
         'redirect_uri': request.host_url + "api/auth/discord",
-        'prompt': 'none',
     }
     url = f'https://discord.com/api/oauth2/authorize?{urlencode(params)}'
     return redirect(url)
 
 @app.route("/api/auth/discord", methods=("GET", "POST"))
 def auth():
-    return "yee"
+    error = request.args.get("error")
+    err_desc = request.args.get("error_description")
+    if error or err_desc:
+        # TODO better error
+        return """<h1>HAHA discord go bbrrrrrrrr</h1>
+                  <p>no but seriously, something is broken</p>"""
+    # parse query params to get 'code' and 'guild_id'.
+    # This guild_id is used as a database key for events,
+    # then redirect to the dashboard.
+    guild_id = request.args.get("guild_id")
+    code = request.args.get("code")
+    permissions = request.args.get("permissions", '0')
+
+    cur = db.cursor()
+    cur.execute("""
+        INSERT INTO guild (guild_id, code, permissions)
+        VALUES (%s, %s, %s)""", (guild_id, code, permissions))
+    db.commit()
+
+    rresp = requests.post(
+        'https://discord.com/api/oauth2/token',
+        data={
+            'client_id': os.getenv("DISCORD_CLIENT_ID"),
+            'client_secret': os.getenv("DISCORD_SECRET"),
+            'grant_type': 'authorization_code',
+            'code': 'code',
+            'scope': 'identity',
+        },
+        headers={
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+    )
+
+    resp = redirect('/control-panel')
+    resp.set_cookie('discord_code', code)
+    resp.set_cookie('guild_id', guild_id)
+    return resp
 
 @app.route("/dashboard", methods=("GET",))
 def dashboard():
     return '<h1>hello, you made it to the dashboard</h1>'
+
+@app.route("/control-panel", methods=("GET",))
+def control_panel():
+    return send_from_directory(app.static_folder, 'control-panel.html')
 
 @app.route('/api/test', methods=['GET', 'POST'])
 def test_route():
@@ -50,7 +98,6 @@ def test_route():
         'app': str(app),
         'config': str(app.config)
     }
-
 
 @app.route('/api/events/<guild_id>', methods=("GET",))
 def list_events(guild_id):

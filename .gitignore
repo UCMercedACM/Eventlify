@@ -137,4 +137,4 @@ db/postgres-data
 # Node
 /node_modules
 
-web/public/css/tailwind.css
+#web/public/css/tailwind.css
