@@ -31167,8 +31167,8 @@ video {
           animation: bounce 1s infinite;
 }
 
-.pt-custom {
-  padding-top: 24rem;
+.mt-custom {
+  margin-top: 28rem;
 }
 
 @media (min-width: 640px) {

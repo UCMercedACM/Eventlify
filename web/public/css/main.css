@@ -3,7 +3,7 @@
 @import "tailwindcss/utilities";
 
 @layer utilities{
-    .pt-custom {
-        padding-top: 24rem;
+    .mt-custom {
+        margin-top: 28rem;
     }
 }

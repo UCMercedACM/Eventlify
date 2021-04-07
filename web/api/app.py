@@ -2,6 +2,7 @@ from flask import Flask, request, send_from_directory, redirect
 import psycopg2
 from dotenv import load_dotenv
 import requests
+import json
 
 from urllib.parse import urlencode
 import os
@@ -31,6 +32,16 @@ def js(path):
 def img(path):
     return send_from_directory(os.path.join(app.static_folder, "img"), path)
 
+@app.route("/servers", methods=("GET",))
+def servers():
+    return send_from_directory(app.static_folder, 'servers.html')
+
+@app.route("/commands", methods=("GET",))
+def commands():
+    return send_from_directory(app.static_folder, 'commands.html')
+
+REDIRECT_URI = 'api/auth/discord'
+
 @app.route("/bot-login", methods=("GET",))
 def bot_login():
     params = {
@@ -38,7 +49,7 @@ def bot_login():
         'permissions': '51200',
         'scope': 'identify guilds bot',
         'response_type': 'code',
-        'redirect_uri': request.host_url + "api/auth/discord",
+        'redirect_uri': request.host_url + REDIRECT_URI,
     }
     url = f'https://discord.com/api/oauth2/authorize?{urlencode(params)}'
     return redirect(url)
@@ -49,8 +60,12 @@ def auth():
     err_desc = request.args.get("error_description")
     if error or err_desc:
         # TODO better error
-        return """<h1>HAHA discord go bbrrrrrrrr</h1>
-                  <p>no but seriously, something is broken</p>"""
+        return f"""<h1>haha discord go bbrrrrrrrr</h1>
+                  <p>no but seriously, something is broken...</p>
+                  <br>
+                  <p>{error}: {err_desc}</p>
+                  """
+
     # parse query params to get 'code' and 'guild_id'.
     # This guild_id is used as a database key for events,
     # then redirect to the dashboard.
@@ -70,7 +85,8 @@ def auth():
             'client_id': os.getenv("DISCORD_CLIENT_ID"),
             'client_secret': os.getenv("DISCORD_SECRET"),
             'grant_type': 'authorization_code',
-            'code': 'code',
+            'redirect_uri': request.host_url + REDIRECT_URI,
+            'code': code,
             'scope': 'identity',
         },
         headers={
@@ -78,10 +94,35 @@ def auth():
         },
     )
 
+    tok = Token(rresp.json())
+
     resp = redirect('/control-panel')
-    resp.set_cookie('discord_code', code)
+    resp.set_cookie("access_token", tok.access_token)
+    resp.set_cookie("expires_in", str(tok.expires_in))
+    resp.set_cookie("refresh_token", tok.refresh_token)
+    resp.set_cookie("scope", tok.scope)
+    resp.set_cookie("token_type", tok.token_type)
     resp.set_cookie('guild_id', guild_id)
     return resp
+
+
+class Token:
+    access_token: str
+    expires_in: int
+    refresh_token: str
+    scope: str
+    token_type: str
+
+    def __init__(self, blob):
+        """
+        __init__ takes a dictionary holding oauth token data
+        """
+        slots = set(Token.__annotations__)
+        for key, value in blob.items():
+            if key not in slots:
+                continue
+            self.__setattr__(key, value)
+
 
 @app.route("/dashboard", methods=("GET",))
 def dashboard():
@@ -173,6 +214,7 @@ def create_event():
 
 @app.route("/api/event/<id>", methods=("GET",))
 def get_event(id):
+    # TODO check guild_id
     with db.cursor() as cur:
         cur.execute("""
             SELECT id,name,date,description,link
@@ -232,4 +274,5 @@ def update_event(id):
 
 @app.route('/api/search')
 def search_event():
+    # TODO
     pass

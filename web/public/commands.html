@@ -33,9 +33,7 @@
 <body>
     <nav>
         <div class="fixed top-7 left-7 float-left">
-            <h1 class = "text-4xl text-center text-white font-bold">
-                <a href="/">Eventify</a>
-            </h1>
+            <h1 class = "text-4xl text-center text-white font-bold">Eventify</h1>
             <!--<div class="relative left-50">
                 <a href = "/documentation" class = "text-white">Documentation</a>
             </div>-->
@@ -96,7 +94,7 @@
         </svg>
         <ul>
             <li><button onclick="alert('yeeeeeeeeeeeeeeeeeeeet you clicked a button');">Event List</button></li>
-            <li><a href="/commands">Command Settings</a></li>
+            <li><a href="\commands">Command Settings</a></li>
         </ul>
         <div class="mt-custom">
             <button onclick="toggleColor()">
@@ -117,71 +115,76 @@
     </nav>
 
     <div class= "relative flex top-1 mt-36 ml-72 items-center justify-left">
-        <button class="text-white rounded-full border border-white py-1 px-3" id="add-event-btn">Add Event</button>
-        <div class="modal add-event flex flex-col p-2" id="add-event-modal">
-            <div class="p-2">
-                <label for="new-event-title">Title</label>
-                <input id="new-event-title" type="text" placeholder="Add Title">
-            </div>
-            <div class="p-2">
-                <label for="new-event-date">Date</label>
-                <input id="new-event-date" type="date">
-                <label for="new-event-time">Time</label>
-                <input id="new-event-time" type="time">
-            </div>
-            <div class="p-2 ml-9">
-                <textarea placeholder="Add description" id="new-event-desc"></textarea>
-                <!--<input id="new-event-desc" type="text" placeholder="Add description"> -->
-            </div>
-            <div class="p-2">
-                <button class="text-right py-2 px-4 rounded" id="close-add-event-modal">Cancel</button>
-                <button id="save-new-event" type="submit" class="py-2 px-4 rounded">Save</button>
-            </div>
+        <div class= "flex flex-nowrap">
+            <button class = "text-2xl text-white float-left ml-24">Adding Events</button>
+            <button class = "text-2xl text-white float-left ml-24">Removing Events</button>
+            <button class = "text-2xl text-white float-left ml-24">Editing Events</button>
+            <button class = "text-2xl text-white float-left ml-24">Listing Events</button>
         </div>
-        <div class= "flex items-center pl-72">
+        <div class= "absolute flex left-5 top-5 grid grid-cols-3 mt-8">
             <div>
-                <label for="filters" class= "text-white rounded-full border border-white py-1 px-3"> Filters: </label>
+                <h1 class= "text-white font-bold w-auto">e!list</h1>
+                <div>
+                    <p class= "text-white">Lists all events for the server</p>
+                </div>
             </div>
-            <div class= "pl-2">
-                <select name="filters" id="filters">
-                    <option value= "Date">Date</option>
-                    <option value= "Title">Title</option>
-                    <option value= "Upcoming">Upcoming</option>
-                </select>
+            <div>
+                <h1 class= "text-white font-bold w-auto">e!edit [eventname] [attribute] [new attribute]</h1>
+                <div>
+                    <p class= "text-white">Edit [eventname]'s [attribute]. Can change name, date, time, description, and link</p>
+                </div>
             </div>
-        </div>
-    </div>
-
-    <div class= "relative flex top-1 mt-3 ml-72">
-        <div>
-            <table class = "text-white border border-solid table-fixed">
-            <tr>
-                <th class= "w-60">Event Title</th>
-                <th class= "w-60">Date</th>
-                <th class= "w-24">Time</th>
-            </tr>
-            <tr>
-                <td class="border text-center">Test Event</td>
-                <td class="border text-center">March 15, 2021</td>
-                <td class="border text-center">07:00 PM</td>
-            </tr>
-            <tr>
-                <td class="border text-center">Take Your Child to Work Day</td>
-                <td class="border text-center">April 7, 2010</td>
-                <td class="border text-center">07:00 PM</td>
-            </tr>
-            </table>
-            <div class = "flex items-center pl-80 pt-3">
-                <label for="Modify" class= "text-white rounded-full border border-white py-1 px-3"> Modify events: </label>
-                <div class= "pl-2">
-                    <select name="Modify" id="modify">
-                        <option value= "Edit">Edit</option>
-                        <option value= "Delete">Delete</option>
-                    </select>
+            <div>
+                <h1 class= "text-white font-bold w-auto">e!add [name] [date] [time] [description] [link]</h1>
+                <div>
+                    <p class= "text-white">Add event with name, date, time, description, and link</p>
+                </div>
+            </div>
+            <div class= "mt-6">
+                <svg id="toggleEList" version="1.1" viewBox="0 0 100 35" width="70" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+                    <g transform="translate(0 -262)">
+                        <rect id="rect" y="262" width="100" height="35" ry="17.5" fill="white"/>
+                        <circle id="circ1" cx="17.5" cy="279.46" r="12.5" fill="#253039"/>
+                        <circle id="circ2" cx="82.5" cy="279.33" r="12.5" fill="white"/>
+                   </g>
+                </svg>
+            </div>
+            <div class = "mt-6">
+                <svg id="toggleEEdit" version="1.1" viewBox="0 0 100 35" width="70" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+                    <g transform="translate(0 -262)">
+                        <rect id="rect" y="262" width="100" height="35" ry="17.5" fill="white"/>
+                        <circle id="circ1" cx="17.5" cy="279.46" r="12.5" fill="#253039"/>
+                        <circle id="circ2" cx="82.5" cy="279.33" r="12.5" fill="white"/>
+                   </g>
+                </svg>
+            </div>
+            <div class= "mt-6">
+                <svg id="toggleEAdd" version="1.1" viewBox="0 0 100 35" width="70" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+                    <g transform="translate(0 -262)">
+                        <rect id="rect" y="262" width="100" height="35" ry="17.5" fill="white"/>
+                        <circle id="circ1" cx="17.5" cy="279.46" r="12.5" fill="#253039"/>
+                        <circle id="circ2" cx="82.5" cy="279.33" r="12.5" fill="white"/>
+                   </g>
+                </svg>
+            </div>
+            <div class= "mt-6">
+                <h1 class= "text-white font-bold w-auto">e!remove [eventname]</h1>
+                <div>
+                    <p class= "text-white">Remove [eventname].</p>
+                    <div class= "mt-6">
+                        <svg id="toggleERemove" version="1.1" viewBox="0 0 100 35" width="70" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+                            <g transform="translate(0 -262)">
+                                <rect id="rect" y="262" width="100" height="35" ry="17.5" fill="white"/>
+                                <circle id="circ1" cx="17.5" cy="279.46" r="12.5" fill="#253039"/>
+                                <circle id="circ2" cx="82.5" cy="279.33" r="12.5" fill="white"/>
+                            </g>
+                        </svg>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
 
     <script src="js/main.js"></script>
     <script>
